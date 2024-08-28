@@ -8,13 +8,36 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
 
-class SegmetationHead(nn.Module):
+class SegmentationHead(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super(SegmetationHead, self).__init__()
+        super(SegmentationHead, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
         
     def forward(self, x):
         return self.conv(x)
+    
+class UpsamplingLayer(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(UpsamplingLayer, self).__init__()
+        self.upsample = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2)
+
+    def forward(self, x, target_size):
+        x = self.upsample(x)
+        return F.interpolate(x, size=target_size, mode='bilinear', align_corners=False)
+    
+class UpsampleFinal(nn.Module):
+    def __init__(self, in_channels, out_channels, output_size=(224, 224)):
+        super(UpsampleFinal, self).__init__()
+        self.conv_transpose = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1)
+        self.conv = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.output_size = output_size
+
+    def forward(self, x):
+        x = self.conv_transpose(x)
+        x = F.interpolate(x, size=self.output_size, mode='bilinear', align_corners=False)
+        x = self.conv(x)
+        return x
+
     
 # Define the FPN decoder
 class FPNDecoder(nn.Module):
@@ -30,6 +53,12 @@ class FPNDecoder(nn.Module):
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
             for _ in feature_channels
         ])
+        
+        # Adding transposed convolutions for upsampling
+        self.upsample_convs = nn.ModuleList([
+            nn.ConvTranspose2d(out_channels, out_channels, kernel_size=2, stride=2)
+            for _ in range(len(feature_channels) - 1)
+        ])
 
     def forward(self, features):
         reshaped_features = []
@@ -42,11 +71,20 @@ class FPNDecoder(nn.Module):
         lateral_features = [lateral_conv(f) for lateral_conv, f in zip(self.lateral_convs, reshaped_features)]
 
         # Upsample and add the feature maps, ensuring they have the same size
+        # for i in range(len(lateral_features) - 1, 0, -1):
+        #     # Get the target size from the previous feature map
+        #     target_size = lateral_features[i - 1].shape[2:]
+        #     # Upsample to the target size
+        #     upsampled = F.interpolate(lateral_features[i], size=target_size, mode='nearest')
+        #     lateral_features[i - 1] += upsampled
+        
         for i in range(len(lateral_features) - 1, 0, -1):
-            # Get the target size from the previous feature map
-            target_size = lateral_features[i - 1].shape[2:]
-            # Upsample to the target size
-            upsampled = F.interpolate(lateral_features[i], size=target_size, mode='nearest')
+            upsampled = self.upsample_convs[i - 1](lateral_features[i])
+
+            # Match dimensions before adding
+            target_size = lateral_features[i - 1].shape[2:]  # Height and width of the previous layer
+            upsampled = F.interpolate(upsampled, size=target_size, mode='bilinear', align_corners=False)
+
             lateral_features[i - 1] += upsampled
 
         pyramid_features = [smooth_conv(f) for smooth_conv, f in zip(self.smooth_convs, lateral_features)]
@@ -63,7 +101,10 @@ class Model(nn.Module):
         # self.Encoder.to(self.device)
         self.FPNDecoder = FPNDecoder([192, 384, 768, 768], 256)
         # self.FPNDecoder.to(self.device)
-        self.segmentation_head = SegmetationHead(256, num_classes)
+        self.upsampling_layer = UpsamplingLayer(256, 256)
+        self.segmentation_head = SegmentationHead(256, num_classes)
+        self.upsample_final = UpsampleFinal(num_classes, num_classes, output_size=(224, 224))
+
 
         
     def forward(self, x):
@@ -76,12 +117,14 @@ class Model(nn.Module):
         
         # Upsample and add the other feature maps to the combined map
         for i in range(1, len(pyramid_features)):
-            upsampled = F.interpolate(pyramid_features[i], size=target_size, mode='nearest')
+            upsampled = self.upsampling_layer(pyramid_features[i], target_size)
             combined_feature_map += upsampled
-        
+
         segmentation_map = self.segmentation_head(combined_feature_map)
         
-        final_segmentation_map = F.interpolate(segmentation_map, size=(224, 224), mode='bilinear', align_corners=False)
+        
+        final_segmentation_map = self.upsample_final(segmentation_map)
+        
         
         # final_segmentation_map = torch.sigmoid(final_segmentation_map)
         # binary_segmentation_map = (final_segmentation_map > self.threshold).float()
