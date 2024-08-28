@@ -14,7 +14,7 @@ import cv2
 from scipy.fftpack import dct
 
 if __name__ == '__main__':
-    num_epochs = 10
+    num_epochs = 50
     # Paths to your image and mask directories
     image_dir = 'Dataset/val/img'
     mask_dir = 'Dataset/val/mask'
@@ -46,5 +46,5 @@ if __name__ == '__main__':
         print(f'Train Loss: {train_loss:.4f} | Validation Loss: {val_loss:.4f} | Validation IoU: {val_iou:.4f}')
         
     # Save the model
-    torch.save(model.state_dict(), 'models/model3.pth')
+    torch.save(model.state_dict(), 'models/model_9000IM_50EP.pth')
 

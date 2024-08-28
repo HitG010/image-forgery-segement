@@ -97,7 +97,7 @@ def train(model, dataloader, criterion, optimizer, device):
         combined_input = torch.stack([original, dct_filtered, laplacian], dim=1).to(device)
         
         # Normalize the input
-        combined_input = combined_input / 255.0
+        # combined_input = combined_input / 255.0
         
         # print(combined_input.shape, "combined_input")
         masks = masks.float().to(device)
@@ -135,7 +135,7 @@ def validate(model, dataloader, criterion, device):
             combined_input = torch.stack([original, dct_filtered, laplacian], dim=1).to(device)
             
             # Normalize the input
-            combined_input = combined_input / 255.0
+            # combined_input = combined_input / 255.0
             
             # print(combined_input.shape, "combined_input")
             masks = masks.float().to(device)

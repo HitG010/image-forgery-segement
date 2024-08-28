@@ -73,7 +73,7 @@ def visualize_prediction(model, image_path, mask_path, device, threshold=10):
     # Predict the mask
     with torch.no_grad():
         output = model(combined_input)
-        output = torch.sigmoid(output)
+        # output = torch.sigmoid(output)
         pred_mask = (output).float().cpu().numpy().squeeze()
 
     # Plot the original image, ground truth mask, and predicted mask
@@ -96,12 +96,12 @@ def visualize_prediction(model, image_path, mask_path, device, threshold=10):
 # Example Usage:
 device = "mps"
 model = Model(num_classes=1)  # Replace with your model class
-model_path = 'models/model3.pth'  # Path to the trained model
+model_path = 'models/model_9000IM_50EP.pth'  # Path to the trained model
 
 # Load the trained model
 model.load_state_dict(torch.load(model_path, map_location=device))
 model.to(device)
 # Visualize a prediction
-test_image_path = '/Users/hiteshgupta/Documents/ML-CV/ImageForgery/Dataset/train/img/img/0_000000040930.tif'
-test_mask_path = '/Users/hiteshgupta/Documents/ML-CV/ImageForgery/Dataset/train/donor_mask/0_000000040930.tif'
+test_image_path = '/Users/hiteshgupta/Documents/ML-CV/Image-Segement-Forgery/Dataset/train/img/img/0_000000009069.tif'
+test_mask_path = '/Users/hiteshgupta/Documents/ML-CV/Image-Segement-Forgery/Dataset/train/donor_mask/0_000000009069.tif'
 visualize_prediction(model, test_image_path, test_mask_path, device, threshold=10)
