@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from scipy.fftpack import dct, idct
 
-def high_pass_filter(dct_coeffs, threshold=10):
+def high_pass_filter(dct_coeffs, threshold=1):
     """
     Applies a high-pass filter to the DCT coefficients.
     
@@ -70,7 +70,7 @@ def dct_YCbCr(image, threshold=10):
     return dct_Y, img, dct_Cr, dct_Cb
 image_path = 'test.jpg'
 dct_Y, img, dct_Cr, dct_Cb = dct_YCbCr(image_path)
-# dct_filtered, laplacian = preprocessing(image_path)
+# img, dct_filtered, laplacian = preprocessing(image_path)
 # print(dct_filtered.shape)
 # print(laplacian.shape)
 
@@ -78,11 +78,11 @@ dct_Y, img, dct_Cr, dct_Cb = dct_YCbCr(image_path)
 import matplotlib.pyplot as plt
 plt.figure(figsize=(10, 5))
 plt.subplot(1, 2, 1)
-plt.imshow(dct_Cr, cmap='gray')
+plt.imshow(dct_Y, cmap='gray')
 plt.title('DCT Filtered Image')
 plt.axis('off')
-plt.subplot(1, 2, 2)
-plt.imshow(img)
-plt.title('Laplacian Filtered Image')
-plt.axis('off')
+# plt.subplot(1, 2, 2)
+# plt.imshow(laplacian, cmap='grey')
+# plt.title('Laplacian Filtered Image')
+# plt.axis('off')
 plt.show()
