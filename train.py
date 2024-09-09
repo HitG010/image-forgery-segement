@@ -46,5 +46,17 @@ if __name__ == '__main__':
         print(f'Train Loss: {train_loss:.4f} | Validation Loss: {val_loss:.4f} | Validation IoU: {val_iou:.4f}')
         
     # Save the model
-    torch.save(model.state_dict(), 'models/model_9000IM_50EP.pth')
+    torch.save(model.state_dict(), 'models/model_9000IM_50EP_FULL.pth')
+    
+    # plot the loss
+    plt.plot(train_loss, label='train')
+    plt.plot(val_loss, label='validation')
+    plt.legend()
+    plt.show()
+    
+    # plot the iou
+    plt.plot(val_iou, label='validation')
+    plt.legend()
+    plt.show()
+    
 
